@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Clear
@@ -199,27 +200,83 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                             Text("批量发送: ${itemsFileName ?: "未命名"} (${itemsList.size} 个)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
                             Spacer(modifier = Modifier.height(8.dp))
                             // 替换参数下拉选择
-                            Box {
-                                OutlinedTextField(
-                                    value = if (batchTargetParam.isBlank()) "不替换" else batchTargetParam,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    label = { Text("替换参数名", fontSize = 12.sp) },
-                                    placeholder = { Text("物品代码将替换此参数", fontSize = 12.sp) },
-                                    textStyle = TextStyle(fontSize = 12.sp),
-                                    trailingIcon = {
-                                        IconButton(onClick = { showParamDropdown = !showParamDropdown }) {
-                                            Icon(Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Text("替换参数", fontSize = 12.sp, color = AppColors.TextSecondary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.SeparatorLight),
+                                    color = Color.Transparent,
+                                    modifier = Modifier.fillMaxWidth().clickable { showParamDropdown = true }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (batchTargetParam.isBlank()) {
+                                            Text("不替换（物品代码直接追加到请求体）", fontSize = 13.sp, color = AppColors.TextHint, modifier = Modifier.weight(1f))
+                                        } else {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(batchTargetParam, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = AppColors.SystemBlue, fontFamily = FontFamily.Monospace)
+                                                val currentVal = editableParams[batchTargetParam] ?: ""
+                                                if (currentVal.isNotBlank()) {
+                                                    Text("当前值: $currentVal", fontSize = 11.sp, color = AppColors.TextHint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                }
+                                            }
                                         }
-                                    }
-                                )
-                                DropdownMenu(expanded = showParamDropdown, onDismissRequest = { showParamDropdown = false }) {
-                                    DropdownMenuItem(text = { Text("不替换") }, onClick = { viewModel.updateBatchTargetParam(""); showParamDropdown = false })
-                                    availableParamNames.forEach { name ->
-                                        DropdownMenuItem(text = { Text(name) }, onClick = { viewModel.updateBatchTargetParam(name); showParamDropdown = false })
+                                        Icon(Icons.Default.ExpandMore, contentDescription = null, tint = AppColors.TextSecondary, modifier = Modifier.size(20.dp))
                                     }
                                 }
+                                DropdownMenu(
+                                    expanded = showParamDropdown,
+                                    onDismissRequest = { showParamDropdown = false },
+                                    modifier = Modifier.fillMaxWidth(0.9f)
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                if (batchTargetParam.isBlank()) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = AppColors.SystemBlue, modifier = Modifier.size(18.dp))
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                } else {
+                                                    Spacer(modifier = Modifier.width(26.dp))
+                                                }
+                                                Text("不替换", fontSize = 14.sp)
+                                            }
+                                        },
+                                        onClick = { viewModel.updateBatchTargetParam(""); showParamDropdown = false }
+                                    )
+                                    if (availableParamNames.isNotEmpty()) {
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    }
+                                    availableParamNames.forEach { name ->
+                                        val isSelected = batchTargetParam == name
+                                        val paramValue = editableParams[name] ?: ""
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    if (isSelected) {
+                                                        Icon(Icons.Default.Check, contentDescription = null, tint = AppColors.SystemBlue, modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                    } else {
+                                                        Spacer(modifier = Modifier.width(26.dp))
+                                                    }
+                                                    Column {
+                                                        Text(name, fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, color = if (isSelected) AppColors.SystemBlue else AppColors.TextPrimary)
+                                                        if (paramValue.isNotBlank()) {
+                                                            Text("= $paramValue", fontSize = 11.sp, color = AppColors.TextHint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onClick = { viewModel.updateBatchTargetParam(name); showParamDropdown = false }
+                                        )
+                                    }
+                                }
+                            }
+                            if (batchTargetParam.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("💡 物品代码将替换「$batchTargetParam」的值发送", fontSize = 11.sp, color = AppColors.TextHint)
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
