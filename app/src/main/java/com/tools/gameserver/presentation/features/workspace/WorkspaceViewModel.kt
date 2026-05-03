@@ -569,6 +569,7 @@ class WorkspaceViewModel : ViewModel() {
 
     fun selectAll() { _selectedItemIndices.value = _itemsList.value.indices.toSet() }
     fun selectAll(indices: Set<Int>) { _selectedItemIndices.value = _selectedItemIndices.value + indices }
+    fun selectAllFiltered(filteredIndices: List<Int>) { _selectedItemIndices.value = filteredIndices.toSet() }
     fun clearSelection() { _selectedItemIndices.value = emptySet() }
     fun clearSelection(indices: Set<Int>) { _selectedItemIndices.value = _selectedItemIndices.value - indices }
     fun toggleItem(index: Int) {

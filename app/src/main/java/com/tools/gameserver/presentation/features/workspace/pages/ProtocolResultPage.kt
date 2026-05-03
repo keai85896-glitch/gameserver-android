@@ -16,7 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -67,6 +71,7 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
     // 用本地状态控制展开/折叠，避免污染 editableParams
     var headersExpanded by remember { mutableStateOf(true) }
     var responseExpanded by remember { mutableStateOf(true) }
+    val selectedIndices by viewModel.selectedItemIndices.collectAsState()
     val parsed = parsedData ?: return
     val clipboardManager = LocalClipboardManager.current
 
@@ -225,6 +230,111 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                     }
                                 }
                             }
+                            // ── 物品列表（带搜索 + 分页） ──
+                            Spacer(modifier = Modifier.height(8.dp))
+                            var itemSearchQuery by remember { mutableStateOf("") }
+                            var itemPage by remember { mutableIntStateOf(0) }
+                            val pageSize = 30
+                            // 搜索过滤
+                            val filteredItems = remember(itemsList, itemSearchQuery) {
+                                if (itemSearchQuery.isBlank()) itemsList.withIndex().toList()
+                                else itemsList.withIndex().filter { (i, pair) ->
+                                    pair.first.contains(itemSearchQuery, ignoreCase = true) ||
+                                    pair.second.contains(itemSearchQuery, ignoreCase = true)
+                                }
+                            }
+                            val totalFilteredPages = maxOf(1, (filteredItems.size + pageSize - 1) / pageSize)
+                            // 确保当前页不越界
+                            val safePage = itemPage.coerceIn(0, totalFilteredPages - 1)
+                            if (safePage != itemPage) itemPage = safePage
+                            val pageItems = filteredItems.drop(safePage * pageSize).take(pageSize)
+
+                            // 标题栏 + 全选
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Text("物品列表", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                                Spacer(modifier = Modifier.weight(1f))
+                                val allFilteredSelected = filteredItems.isNotEmpty() && filteredItems.all { (idx, _) -> idx in selectedIndices }
+                                TextButton(
+                                    onClick = {
+                                        if (allFilteredSelected) {
+                                            // 取消当前过滤结果的选中
+                                            val filteredIdxSet = filteredItems.map { it.index }.toSet()
+                                            viewModel.clearSelection(filteredIdxSet)
+                                        } else {
+                                            viewModel.selectAllFiltered(filteredItems.map { it.index })
+                                        }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                ) {
+                                    Text(if (allFilteredSelected) "取消全选" else "全选", fontSize = 12.sp, color = AppColors.SystemBlue)
+                                }
+                            }
+                            // 搜索框
+                            OutlinedTextField(
+                                value = itemSearchQuery,
+                                onValueChange = { itemSearchQuery = it; itemPage = 0 },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("搜索物品代码或名称...", fontSize = 12.sp, color = AppColors.TextHint) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AppColors.TextHint, modifier = Modifier.size(18.dp)) },
+                                trailingIcon = {
+                                    if (itemSearchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { itemSearchQuery = ""; itemPage = 0 }, modifier = Modifier.size(18.dp)) {
+                                            Icon(Icons.Default.Clear, contentDescription = "清空", tint = AppColors.TextHint, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                textStyle = TextStyle(fontSize = 13.sp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AppColors.SystemBlue,
+                                    unfocusedBorderColor = AppColors.SeparatorLight,
+                                    cursorColor = AppColors.SystemBlue
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("已选 ${selectedIndices.size} / ${itemsList.size}" + if (itemSearchQuery.isNotBlank()) "  (筛选 ${filteredItems.size} 个)" else "", fontSize = 11.sp, color = AppColors.TextHint)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            // 物品列表（分页）
+                            if (filteredItems.isEmpty()) {
+                                Text("无匹配物品", fontSize = 12.sp, color = AppColors.TextHint, modifier = Modifier.padding(vertical = 8.dp))
+                            } else {
+                                pageItems.forEach { (index, pair) ->
+                                    val (code, name) = pair
+                                    val isSelected = index in selectedIndices
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (isSelected) AppColors.SystemBlue.copy(alpha = 0.08f) else Color.Transparent)
+                                            .clickable { viewModel.toggleItem(index) }
+                                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = { viewModel.toggleItem(index) },
+                                            modifier = Modifier.size(28.dp),
+                                            colors = CheckboxDefaults.colors(checkedColor = AppColors.SystemBlue)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(code, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextPrimary, modifier = Modifier.widthIn(max = 100.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(name, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                            }
+                            // 分页控件
+                            if (totalFilteredPages > 1) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { itemPage-- }, enabled = safePage > 0, modifier = Modifier.size(32.dp)) {
+                                        Icon(Icons.Default.ChevronLeft, contentDescription = "上一页", tint = if (safePage > 0) AppColors.SystemBlue else AppColors.TextDisabled)
+                                    }
+                                    Text("${safePage + 1} / $totalFilteredPages", fontSize = 12.sp, color = AppColors.TextSecondary, modifier = Modifier.padding(horizontal = 8.dp))
+                                    IconButton(onClick = { itemPage++ }, enabled = safePage < totalFilteredPages - 1, modifier = Modifier.size(32.dp)) {
+                                        Icon(Icons.Default.ChevronRight, contentDescription = "下一页", tint = if (safePage < totalFilteredPages - 1) AppColors.SystemBlue else AppColors.TextDisabled)
+                                    }
+                                }
+                            }
                             if (isBatchSending) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 LinearProgressIndicator(progress = { if (batchTotal > 0) batchProgress.toFloat() / batchTotal else 0f }, modifier = Modifier.fillMaxWidth())
@@ -271,10 +381,11 @@ if (batchResults.isNotEmpty()) {
                         Text("停止", fontSize = 13.sp)
                     }
                 } else {
-                    Button(onClick = { showBatchConfirm = true }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppColors.SystemGreen)) {
+                    val selCount = selectedIndices.size
+                    Button(onClick = { if (selCount > 0) showBatchConfirm = true }, modifier = Modifier.weight(1f), enabled = selCount > 0, colors = ButtonDefaults.buttonColors(containerColor = AppColors.SystemGreen)) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("批量 (${itemsList.size})", fontSize = 13.sp)
+                        Text("批量 ($selCount)", fontSize = 13.sp)
                     }
                 }
             }
@@ -284,8 +395,8 @@ if (batchResults.isNotEmpty()) {
         AlertDialog(
             onDismissRequest = { showBatchConfirm = false },
             title = { Text("确认批量发送", fontWeight = FontWeight.SemiBold) },
-            text = { Text("将向服务器发送 ${itemsList.size} 个请求，间隔 ${batchDelayMs}ms") },
-            confirmButton = { TextButton(onClick = { showBatchConfirm = false; viewModel.startBatchSend(viewModel.selectedItemIndices.value.ifEmpty { itemsList.indices.toSet() }) }) { Text("发送") } },
+            text = { Text("将向服务器发送 ${selectedIndices.size} 个已选物品，间隔 ${batchDelayMs}ms") },
+            confirmButton = { TextButton(onClick = { showBatchConfirm = false; viewModel.startBatchSend(selectedIndices) }) { Text("发送") } },
             dismissButton = { TextButton(onClick = { showBatchConfirm = false }) { Text("取消") } }
         )
     }
