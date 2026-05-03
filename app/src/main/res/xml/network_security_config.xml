@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Config — 仅允许特定域名明文 HTTP 流量
+    Android 9+ 默认禁止明文 HTTP，此处白名单放行游戏私服地址和本地代理
+    Fix 5.1: 比全局 usesCleartextTraffic=true 更安全
+-->
+<network-security-config>
+    <!-- 允许明文 HTTP 的域名白名单 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 游戏私服目标地址 -->
+        <domain includeSubdomains="true">124.223.84.161</domain>
+        <!-- 后端 API -->
+        <domain includeSubdomains="true">d78.bt1.886966.xyz</domain>
+        <!-- 本地代理 -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- CORS 代理 (HTTPS，但备用列入) -->
+        <domain includeSubdomains="true">corsproxy.io</domain>
+    </domain-config>
+</network-security-config>

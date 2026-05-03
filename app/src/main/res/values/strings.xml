@@ -1,0 +1,4 @@
+<resources>
+    <!-- Fix 4.4: 应用名从占位符改为正式名称 -->
+    <string name="app_name">游戏私服工具箱</string>
+</resources>

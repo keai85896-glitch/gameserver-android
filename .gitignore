@@ -1,0 +1,30 @@
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+*/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+app/build/
+app/release/
+*.log
+
+# 非 Android 核心目录
+/backend/
+/tools/
+/admin/
+/node_modules/
+/.kotlin/
+
+# Operit 平台目录
+.backup/
+.operit/
+
