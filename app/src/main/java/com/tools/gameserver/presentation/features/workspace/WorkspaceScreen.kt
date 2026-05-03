@@ -55,7 +55,6 @@ import com.tools.gameserver.presentation.features.workspace.components.Workspace
 import com.tools.gameserver.presentation.features.workspace.model.*
 import com.tools.gameserver.presentation.features.workspace.pages.GameDetailPage
 import com.tools.gameserver.presentation.features.workspace.pages.ItemFilePage
-import com.tools.gameserver.presentation.features.workspace.pages.ProtocolInputPage
 import com.tools.gameserver.presentation.features.workspace.pages.ProtocolResultPage
 import com.tools.gameserver.presentation.features.workspace.parseItemFile
 import java.io.File
@@ -266,10 +265,6 @@ fun WorkspaceScreen(
                     onItemWithProtocol = { itemFile, items, gameEntry, protocolFile -> viewModel.loadProtocolAndNavigateItems(protocolFile, itemFile, items, gameEntry) },
                     onFileLongPress = { viewModel.showDialog(WorkspaceDialog.DeleteFile(it)) },
                     onRefreshEntries = { viewModel.refreshGameList() }
-                )
-                is WorkspacePage.ProtocolInput -> ProtocolInputPage(
-                    viewModel = viewModel,
-                    onParse = { viewModel.parseProtocol() }
                 )
                 is WorkspacePage.ProtocolResult -> ProtocolResultPage(
                     viewModel = viewModel

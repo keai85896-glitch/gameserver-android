@@ -193,24 +193,20 @@ class WorkspaceViewModel : ViewModel() {
         _itemCurrentPage.value = 0
         _currentPage.value = WorkspacePage.ItemFile(file, items, ownerGame)
     }
-    fun navigateToProtocolInput() { _currentPage.value = WorkspacePage.ProtocolInput }
     fun navigateToProtocolResult() { _currentPage.value = WorkspacePage.ProtocolResult }
 
     fun navigateBack() {
         when (val page = _currentPage.value) {
             is WorkspacePage.GameDetail -> navigateToGameList()
             is WorkspacePage.ItemFile -> navigateToGameDetail(page.ownerGameEntry)
-            is WorkspacePage.ProtocolInput -> navigateToGameList()
             is WorkspacePage.ProtocolResult -> {
                 val fromGame = _loadedFromGameEntry.value
+                _loadedFromGameEntry.value = null
+                resetProtocolState()
                 if (fromGame != null) {
-                    _loadedFromGameEntry.value = null
-                    resetProtocolState()
                     navigateToGameDetail(fromGame)
                 } else {
-                    _loadedFromGameEntry.value = null
-                    resetProtocolState()
-                    navigateToProtocolInput()
+                    navigateToGameList()
                 }
             }
             else -> {}
@@ -340,15 +336,21 @@ class WorkspaceViewModel : ViewModel() {
 
     fun loadProtocolAndNavigateItems(protocolFile: File, itemFile: File, items: List<Pair<String, String>>, gameEntry: LocalGameEntry) {
         try {
+            // 先设置物品列表和批量状态（确保在 parseProtocol 触发页面跳转前就绑定好）
+            _itemsList.value = items
+            _itemsFileName.value = itemFile.nameWithoutExtension
+            _selectedItemIndices.value = emptySet()
+            _batchProgress.value = 0
+            _batchTotal.value = 0
+            _batchResults.value = emptyList()
+            _loadedFromGameEntry.value = gameEntry
+
             val content = protocolFile.readText()
             val (headers, body) = parseProtocolContent(content)
             _rawHeaders.value = headers
             _rawBody.value = body
             _sourceProtocolFile.value = protocolFile
             parseProtocol()
-            _itemsList.value = items
-            _itemsFileName.value = itemFile.nameWithoutExtension
-            _loadedFromGameEntry.value = gameEntry
             SnackbarManager.show("已加载: ${protocolFile.nameWithoutExtension} + ${itemFile.nameWithoutExtension}")
         } catch (e: Exception) {
             _sendStatus.value = SendStatus.Error("解析失败: ${e.message}")

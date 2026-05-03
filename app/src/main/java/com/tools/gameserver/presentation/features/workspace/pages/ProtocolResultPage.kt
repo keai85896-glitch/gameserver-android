@@ -131,11 +131,18 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(key, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.SystemBlue, modifier = Modifier.widthIn(max = 120.dp).weight(0.3f, fill = false))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    BasicTextField(
+                                    OutlinedTextField(
                                         value = value,
-                                        onValueChange = { viewModel.updateEditableParam(key, it) },
-                                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).background(AppColors.SeparatorLight).padding(horizontal = 8.dp, vertical = 6.dp),
-                                        textStyle = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextPrimary)
+                                        onValueChange = { newValue -> viewModel.updateEditableParam(key, newValue) },
+                                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 1.dp),
+                                        textStyle = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = AppColors.SystemBlue,
+                                            unfocusedBorderColor = AppColors.SeparatorLight,
+                                            cursorColor = AppColors.SystemBlue
+                                        )
                                     )
                                 }
                             }

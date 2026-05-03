@@ -31,9 +31,6 @@ sealed class WorkspacePage {
         val ownerGameEntry: LocalGameEntry
     ) : WorkspacePage()
 
-    /** 协议输入页 */
-    object ProtocolInput : WorkspacePage()
-
     /** 协议解析结果页 */
     object ProtocolResult : WorkspacePage()
 }
