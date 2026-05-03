@@ -13,6 +13,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.nio.charset.Charset
+import java.util.zip.GZIPInputStream
+import java.io.ByteArrayInputStream
 import org.json.JSONObject
 import java.io.File
 import java.net.ConnectException
@@ -239,12 +242,91 @@ object ApiClient {
             }
     }
 
+    /**
+     * 智能解码响应体：
+     * 1. 如果 Content-Encoding: gzip → 先 GZIP 解压
+     * 2. 如果 Content-Type 含 charset → 用指定编码
+     * 3. 否则依次尝试 UTF-8 → GBK → GB2312 → ISO-8859-1
+     */
+    private fun decodeResponseBody(response: okhttp3.Response): String {
+        val contentType = response.header("Content-Type") ?: ""
+        val contentEncoding = response.header("Content-Encoding") ?: ""
+        val rawBytes = response.body?.bytes() ?: return ""
+
+        // Step 1: gzip 解压
+        val bytes = if (contentEncoding.contains("gzip", ignoreCase = true)) {
+            try {
+                GZIPInputStream(ByteArrayInputStream(rawBytes)).use { it.readBytes() }
+            } catch (_: Exception) {
+                rawBytes  // 不是真正的 gzip，原样处理
+            }
+        } else {
+            rawBytes
+        }
+
+        // Step 2: 从 Content-Type 提取 charset
+        val declaredCharset = contentType
+            .split(";")
+            .drop(1)
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("charset=", ignoreCase = true) }
+            ?.substringAfter("charset=", "")
+            ?.trim()
+            ?.removeSurrounding("\"", "\"")
+
+        if (!declaredCharset.isNullOrBlank()) {
+            return try {
+                String(bytes, Charset.forName(declaredCharset))
+            } catch (_: Exception) {
+                // 声明的 charset 不可用，走 fallback
+                fallbackDecode(bytes)
+            }
+        }
+
+        // Step 3: 自动检测
+        return smartDecode(bytes)
+    }
+
+    private fun smartDecode(bytes: ByteArray): String {
+        // 先尝试 UTF-8
+        val utf8Str = try { String(bytes, Charset.forName("UTF-8")) } catch (_: Exception) { null }
+        if (utf8Str != null && !containsReplacementChars(utf8Str)) {
+            return utf8Str
+        }
+        return fallbackDecode(bytes)
+    }
+
+    private fun fallbackDecode(bytes: ByteArray): String {
+        // 依次尝试 GBK → GB2312 → ISO-8859-1
+        for (charset in listOf("GBK", "GB2312", "GB18030")) {
+            try {
+                val s = String(bytes, Charset.forName(charset))
+                if (!containsReplacementChars(s)) return s
+            } catch (_: Exception) {}
+        }
+        // 最后兜底 ISO-8859-1（永远不会失败）
+        return String(bytes, Charset.forName("ISO-8859-1"))
+    }
+
+    /**
+     * 检测字符串中是否含有 Unicode 替换字符 (U+FFFD)，
+     * 这通常意味着用错误的 charset 解码了。
+     */
+    private fun containsReplacementChars(s: String): Boolean {
+        // 检查替换字符（解码失败标志）
+        val replacementCount = s.count { it == '\uFFFD' }
+        if (replacementCount > 0) return true
+        // 也检查连续乱码特征：大量非中文非英文非数字不可打印字符
+        val nonPrintableCount = s.count { it.code < 0x20 && it != '\n' && it != '\r' && it != '\t' }
+        return nonPrintableCount > s.length * 0.1  // 超过 10% 不可打印字符 → 可能乱码
+    }
+
     private fun executeRequest(request: Request): ApiResult {
         return try {
             val response = httpClient.newCall(request).execute()
             val code = response.code
-            val body = response.body?.string() ?: ""
-            Log.d(TAG, "${request.method} ${request.url} → $code")
+            val body = decodeResponseBody(response)
+            Log.d(TAG, "${request.method} ${request.url} → $code (${body.length} chars)")
             if (code in 200..299) {
                 ApiResult.Success(body, code)
             } else {

@@ -3,7 +3,6 @@ package com.tools.gameserver.presentation.features.workspace.pages
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,13 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,16 +30,18 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tools.gameserver.core.theme.AppColors
-import com.tools.gameserver.presentation.common.GlassCard
 import com.tools.gameserver.presentation.common.PrimaryButton
 import com.tools.gameserver.presentation.features.workspace.model.LocalGameEntry
 import java.io.File
@@ -63,6 +65,8 @@ fun ItemFilePage(
     onConfirmSelection: () -> Unit,
     onBack: () -> Unit
 ) {
+    var showSaveDialog by remember { mutableStateOf(false) }
+
     val filteredItemsWithIndex: List<Triple<Int, String, String>> = if (searchQuery.isBlank()) {
         items.mapIndexed { i, (code, name) -> Triple(i, code, name) }
     } else {
@@ -80,7 +84,6 @@ fun ItemFilePage(
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = AppColors.TextPrimary) }
             Text(file.name, color = AppColors.TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(start = 4.dp))
-            // 全选/取消
             val allFilteredSelected = filteredIndices.isNotEmpty() && filteredIndices.all { it in selectedIndices }
             TextButton(onClick = {
                 if (allFilteredSelected) onDeselectAll(filteredIndices) else onSelectAll(filteredIndices)
@@ -128,23 +131,74 @@ fun ItemFilePage(
             item { Spacer(Modifier.height(80.dp)) }
         }
 
-        // 底部栏：分页 + 确认选择
+        // 底部栏：分页 + 保存文件 + 确认选择
         Row(
             Modifier.fillMaxWidth().background(AppColors.Surface).padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { if (safePage > 0) onPageChange(safePage - 1) }, enabled = safePage > 0) { Text("<", color = if (safePage > 0) AppColors.SystemBlue else AppColors.TextHint) }
                 Text("${safePage + 1}/$totalPages", color = AppColors.TextSecondary, fontSize = 13.sp)
                 TextButton(onClick = { if (safePage < totalPages - 1) onPageChange(safePage + 1) }, enabled = safePage < totalPages - 1) { Text(">", color = if (safePage < totalPages - 1) AppColors.SystemBlue else AppColors.TextHint) }
             }
+            Spacer(Modifier.weight(1f))
+            // 保存文件按钮
+            TextButton(
+                onClick = { showSaveDialog = true },
+                enabled = selectedIndices.isNotEmpty()
+            ) {
+                Icon(Icons.Default.Save, null, tint = if (selectedIndices.isNotEmpty()) AppColors.SystemGreen else AppColors.TextDisabled, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("保存文件", fontSize = 13.sp, color = if (selectedIndices.isNotEmpty()) AppColors.SystemGreen else AppColors.TextDisabled)
+            }
+            // 确认选择按钮
             PrimaryButton(
-                text = "确认选择 (${selectedIndices.size})",
+                text = "确认 (${selectedIndices.size})",
                 onClick = onConfirmSelection,
                 modifier = Modifier.height(40.dp),
                 enabled = selectedIndices.isNotEmpty()
             )
         }
+    }
+
+    // ── 保存文件弹窗 ──
+    if (showSaveDialog) {
+        var fileName by remember { mutableStateOf("") }
+        val selectedItems = remember(selectedIndices) {
+            selectedIndices.sorted().mapNotNull { idx -> items.getOrNull(idx) }
+        }
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            title = { Text("保存已选物品", fontWeight = FontWeight.SemiBold) },
+            text = {
+                Column {
+                    Text("已选中 ${selectedItems.size} 个物品", fontSize = 13.sp, color = AppColors.TextSecondary)
+                    Text("保存到: ${ownerGameEntry.dir.name}/", fontSize = 12.sp, color = AppColors.TextHint)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = fileName,
+                        onValueChange = { fileName = it },
+                        label = { Text("文件名", fontSize = 12.sp) },
+                        placeholder = { Text("输入保存的文件名", fontSize = 12.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = AppColors.SystemBlue, cursorColor = AppColors.SystemBlue)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (fileName.isNotBlank()) {
+                            onSaveSelected(fileName, selectedItems)
+                            showSaveDialog = false
+                        }
+                    },
+                    enabled = fileName.isNotBlank()
+                ) { Text("保存") }
+            },
+            dismissButton = { TextButton(onClick = { showSaveDialog = false }) { Text("取消") } }
+        )
     }
 }
