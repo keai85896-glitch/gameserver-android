@@ -282,7 +282,7 @@ fun WorkspaceScreen(
                     onDeselectAll = { viewModel.clearSelection(it) },
                     onSearchQueryChange = { viewModel.updateItemSearch(it) },
                     onPageChange = { viewModel.updateItemPage(it) },
-                    onSaveSelected = { name, items -> viewModel.saveItemsToFile(items, name) },
+                    onSaveSelected = { name, items -> viewModel.saveItemsToFile(items, name, page.ownerGameEntry) },
                     onConfirmSelection = { viewModel.navigateBack() },
                     onBack = { viewModel.navigateBack() }
                 )

@@ -580,13 +580,20 @@ class WorkspaceViewModel : ViewModel() {
     fun updateItemPage(page: Int) { _itemCurrentPage.value = page }
 
     // ==================== 保存物品到文件 ====================
-    fun saveItemsToFile(items: List<Pair<String, String>>, fileName: String) {
+    /**
+     * 保存已选物品到文件
+     * @param items 物品列表
+     * @param fileName 用户自定义文件名（不含 .txt 后缀）
+     * @param gameEntry 当前游戏入口（用于确定保存目录）
+     */
+    fun saveItemsToFile(items: List<Pair<String, String>>, fileName: String, gameEntry: LocalGameEntry? = null) {
         try {
-            val dir = File("/storage/emulated/0/游戏私服物品")
+            val dir = gameEntry?.dir ?: File("/storage/emulated/0/游戏私服物品")
             dir.mkdirs()
             val outFile = File(dir, "$fileName.txt")
             outFile.writeText(items.joinToString("\n") { (code, name) -> "$code|$name" })
             SnackbarManager.show("已保存到 ${outFile.name} (${items.size} 个)")
+            refreshGameList()
         } catch (e: Exception) {
             SnackbarManager.show("保存失败: ${e.message}")
         }

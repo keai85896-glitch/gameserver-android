@@ -286,12 +286,21 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     listOf(50L, 100L, 200L, 500L, 1000L).forEach { ms ->
                                         FilterChip(selected = batchDelayMs == ms, onClick = { viewModel.updateBatchDelay(ms) }, label = { Text("${ms}ms", fontSize = 11.sp) })
-                            // ── 物品列表（带搜索 + 分页 + iOS 风格） ──
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // ── 物品列表（带搜索 + 分页 + iOS 风格）──
+                item {
+                    GlassCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("物品列表 (${itemsList.size} 个)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
                             Spacer(modifier = Modifier.height(8.dp))
                             var itemSearchQuery by remember { mutableStateOf("") }
                             var itemPage by remember { mutableIntStateOf(0) }
                             val pageSize = 30
-                            // 搜索过滤
                             val filteredItems = remember(itemsList, itemSearchQuery) {
                                 if (itemSearchQuery.isBlank()) itemsList.withIndex().toList()
                                 else itemsList.withIndex().filter { (_, pair) ->
@@ -304,7 +313,6 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                             if (safePage != itemPage) itemPage = safePage
                             val pageItems = filteredItems.drop(safePage * pageSize).take(pageSize)
 
-                            // 搜索框
                             OutlinedTextField(
                                 value = itemSearchQuery,
                                 onValueChange = { itemSearchQuery = it; itemPage = 0 },
@@ -328,7 +336,6 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                 )
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            // 状态栏：全选 + 已选/总数
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                 val allFilteredSelected = filteredItems.isNotEmpty() && filteredItems.all { (idx, _) -> idx in selectedIndices }
                                 Icon(
@@ -352,7 +359,6 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                 }
                             }
                             Spacer(modifier = Modifier.height(6.dp))
-                            // 物品列表（分页 + iOS 风格）
                             if (filteredItems.isEmpty()) {
                                 Text("无匹配物品", fontSize = 13.sp, color = AppColors.TextHint, modifier = Modifier.padding(vertical = 12.dp))
                             } else {
@@ -377,7 +383,6 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                             Text(name, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                             Text("code: $code", fontSize = 11.sp, color = AppColors.TextHint, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         }
-                                        // 全局序号
                                         Text("#${index + 1}", fontSize = 11.sp, color = AppColors.TextDisabled, modifier = Modifier.padding(start = 4.dp))
                                     }
                                     if (pageIdx < pageItems.size - 1) {
@@ -385,7 +390,6 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                     }
                                 }
                             }
-                            // 分页控件
                             if (totalFilteredPages > 1) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 HorizontalDivider(color = AppColors.SeparatorLight)
@@ -399,10 +403,14 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                     }
                                 }
                             }
-                                    }
-                                }
-                            }
-                            if (isBatchSending) {
+                        }
+                    }
+                }
+                if (isBatchSending) {
+                    item {
+                        GlassCard {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("发送进度", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 LinearProgressIndicator(progress = { if (batchTotal > 0) batchProgress.toFloat() / batchTotal else 0f }, modifier = Modifier.fillMaxWidth())
                                 Text("$batchProgress / $batchTotal", fontSize = 12.sp, color = AppColors.TextSecondary)
@@ -410,9 +418,9 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                         }
                     }
                 }
-if (batchResults.isNotEmpty()) {
-                item {
-                    GlassCard {
+                if (batchResults.isNotEmpty()) {
+                    item {
+                        GlassCard {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("发送结果 (${batchResults.size})", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
                             Spacer(modifier = Modifier.height(8.dp))

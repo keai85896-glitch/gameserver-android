@@ -123,7 +123,6 @@ fun GameDetailPage(
             }
         }
     }
-
     // ── 协议选择弹窗 ──
     if (showProtocolPicker && pendingItemFile != null) {
         AlertDialog(
