@@ -332,7 +332,7 @@ class WorkspaceViewModel : ViewModel() {
             _rawBody.value = body
             _sourceProtocolFile.value = file
             parseProtocol()
-            com.tools.gameserver.core.util.SnackbarManager.show("已加载: ${file.nameWithoutExtension}")
+            SnackbarManager.show("已加载: ${file.nameWithoutExtension}")
         } catch (e: Exception) {
             _sendStatus.value = SendStatus.Error("解析失败: ${e.message}")
         }
@@ -349,7 +349,7 @@ class WorkspaceViewModel : ViewModel() {
             _itemsList.value = items
             _itemsFileName.value = itemFile.nameWithoutExtension
             _loadedFromGameEntry.value = gameEntry
-            com.tools.gameserver.core.util.SnackbarManager.show("已加载: ${protocolFile.nameWithoutExtension} + ${itemFile.nameWithoutExtension}")
+            SnackbarManager.show("已加载: ${protocolFile.nameWithoutExtension} + ${itemFile.nameWithoutExtension}")
         } catch (e: Exception) {
             _sendStatus.value = SendStatus.Error("解析失败: ${e.message}")
         }
@@ -369,7 +369,7 @@ class WorkspaceViewModel : ViewModel() {
         _batchProgress.value = 0
         _batchTotal.value = 0
         _batchResults.value = emptyList()
-        com.tools.gameserver.core.util.SnackbarManager.show("已加载 ${items.size} 个物品代码")
+        SnackbarManager.show("已加载 ${items.size} 个物品代码")
     }
 
     fun initFromPrefill(headers: String, body: String, file: File? = null) {
@@ -401,9 +401,9 @@ class WorkspaceViewModel : ViewModel() {
             file.parentFile?.mkdirs()
             file.writeText(content)
             _sourceProtocolFile.value = file
-            com.tools.gameserver.core.util.SnackbarManager.show("已保存: ${file.nameWithoutExtension}")
+            SnackbarManager.show("已保存: ${file.nameWithoutExtension}")
         } catch (e: Exception) {
-            com.tools.gameserver.core.util.SnackbarManager.show("保存失败: ${e.message}")
+            SnackbarManager.show("保存失败: ${e.message}")
         }
     }
 
@@ -492,7 +492,7 @@ class WorkspaceViewModel : ViewModel() {
             } else {
                 "批量完成: 成功 $successCount / 失败 $failCount / 共 ${selectedIndices.size}"
             }
-            com.tools.gameserver.core.util.SnackbarManager.show(summary)
+            SnackbarManager.show(summary)
         }
     }
 
@@ -547,9 +547,22 @@ class WorkspaceViewModel : ViewModel() {
     fun updateBatchTargetParam(param: String) { _batchTargetParam.value = param }
 
     fun retryFailedBatchItems() {
-        val failedItems = _batchResults.value.filter { !it.success }.map { it.itemCode to it.itemName }
-        if (failedItems.isEmpty()) return
-        com.tools.gameserver.core.util.SnackbarManager.show("已加载 ${failedItems.size} 个失败项，准备重试")
+        val failedCodes = _batchResults.value.filter { !it.success }.map { it.itemCode }.toSet()
+        if (failedCodes.isEmpty()) {
+            SnackbarManager.show("没有失败项需要重试")
+            return
+        }
+        val failedIndices = _itemsList.value.mapIndexedNotNull { index, (code, name) ->
+            if (code in failedCodes) index else null
+        }.toSet()
+        if (failedIndices.isEmpty()) {
+            SnackbarManager.show("无法定位失败项")
+            return
+        }
+        // 清除旧结果中失败项，保留成功的
+        _batchResults.value = _batchResults.value.filter { it.success }
+        SnackbarManager.show("重试 ${failedIndices.size} 个失败项...")
+        startBatchSend(failedIndices)
     }
 
     fun selectAll() { _selectedItemIndices.value = _itemsList.value.indices.toSet() }
@@ -570,9 +583,9 @@ class WorkspaceViewModel : ViewModel() {
             dir.mkdirs()
             val outFile = File(dir, "$fileName.txt")
             outFile.writeText(items.joinToString("\n") { (code, name) -> "$code|$name" })
-            com.tools.gameserver.core.util.SnackbarManager.show("已保存到 ${outFile.name} (${items.size} 个)")
+            SnackbarManager.show("已保存到 ${outFile.name} (${items.size} 个)")
         } catch (e: Exception) {
-            com.tools.gameserver.core.util.SnackbarManager.show("保存失败: ${e.message}")
+            SnackbarManager.show("保存失败: ${e.message}")
         }
     }
 
@@ -581,10 +594,10 @@ class WorkspaceViewModel : ViewModel() {
         try {
             val renamed = File(file.parent, ".deleting_${System.currentTimeMillis()}_${file.name}")
             if (file.renameTo(renamed)) renamed.delete() else file.delete()
-            com.tools.gameserver.core.util.SnackbarManager.show("已删除: ${file.name}")
+            SnackbarManager.show("已删除: ${file.name}")
             refreshGameList()
         } catch (e: Exception) {
-            com.tools.gameserver.core.util.SnackbarManager.show("删除失败: ${e.message}")
+            SnackbarManager.show("删除失败: ${e.message}")
         }
     }
 
@@ -593,10 +606,10 @@ class WorkspaceViewModel : ViewModel() {
             val dir = entry.dir
             val renamed = File(dir.parent, ".deleting_${System.currentTimeMillis()}")
             if (dir.renameTo(renamed)) renamed.deleteRecursively() else dir.deleteRecursively()
-            com.tools.gameserver.core.util.SnackbarManager.show("已删除: ${entry.gameName}")
+            SnackbarManager.show("已删除: ${entry.gameName}")
             refreshGameList()
         } catch (e: Exception) {
-            com.tools.gameserver.core.util.SnackbarManager.show("删除失败: ${e.message}")
+            SnackbarManager.show("删除失败: ${e.message}")
         }
     }
 
@@ -649,9 +662,9 @@ class WorkspaceViewModel : ViewModel() {
                 }
             }
             when {
-                failCount == 0 -> com.tools.gameserver.core.util.SnackbarManager.show("$successCount 个文件已添加")
-                successCount > 0 -> com.tools.gameserver.core.util.SnackbarManager.show("$successCount 个成功，$failCount 个失败")
-                else -> com.tools.gameserver.core.util.SnackbarManager.show("$failCount 个文件添加失败")
+                failCount == 0 -> SnackbarManager.show("$successCount 个文件已添加")
+                successCount > 0 -> SnackbarManager.show("$successCount 个成功，$failCount 个失败")
+                else -> SnackbarManager.show("$failCount 个文件添加失败")
             }
             refreshGameList()
         }

@@ -81,10 +81,11 @@ fun GameDetailPage(
                 Text("暂无协议文件", fontSize = 13.sp, color = AppColors.TextHint, modifier = Modifier.padding(vertical = 16.dp))
             }
         } else {
-            items(entry.protocolFiles) { file ->
+            items(entry.protocolFiles, key = { it.absolutePath }) { file ->
                 ProtocolFileCard(
                     file = file,
-                    onClick = { onProtocolFileClick(file) }
+                    onClick = { onProtocolFileClick(file) },
+                    onLongClick = { onFileLongPress(file) }
                 )
             }
         }
@@ -98,7 +99,7 @@ fun GameDetailPage(
                 Text("暂无物品文件", fontSize = 13.sp, color = AppColors.TextHint, modifier = Modifier.padding(vertical = 16.dp))
             }
         } else {
-            items(entry.itemFiles) { file ->
+            items(entry.itemFiles, key = { it.absolutePath }) { file ->
                 val items = remember(file) { parseItemFile(file) }
                 ItemFileCard(
                     file = file,
@@ -116,7 +117,8 @@ fun GameDetailPage(
                             // 没有协议，走原逻辑
                             onItemFileClick(file, items, entry)
                         }
-                    }
+                    },
+                    onLongClick = { onFileLongPress(file) }
                 )
             }
         }

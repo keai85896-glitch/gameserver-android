@@ -104,7 +104,10 @@ fun ItemFilePage(
             itemsIndexed(pageItems, key = { _, (idx, code, _) -> "$idx-$code" }) { _, (originalIdx, code, name) ->
                 val isSelected = originalIdx in selectedIndices
                 Row(
-                    Modifier.fillMaxWidth().clickable { onToggleSelection(originalIdx) }.padding(vertical = 6.dp, horizontal = 16.dp),
+                    Modifier.fillMaxWidth()
+                        .background(if (isSelected) AppColors.SystemBlue.copy(alpha = 0.06f) else Color.Transparent)
+                        .clickable { onToggleSelection(originalIdx) }
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(

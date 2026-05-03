@@ -3,7 +3,6 @@ package com.tools.gameserver.presentation.features.workspace.components
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,8 +46,6 @@ fun LocalGameCard(
     val itemCount = entry.itemFiles.size
     Row(
         modifier = Modifier.fillMaxWidth().combinedClickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
             onClick = onClick,
             onLongClick = onLongClick
         ).padding(vertical = 12.dp),

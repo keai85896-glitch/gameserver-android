@@ -58,11 +58,11 @@ fun ProtocolInputPage(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "协议输入",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
-                )
+    "协议输入",
+    fontSize = 22.sp,
+    fontWeight = FontWeight.Bold,
+    color = AppColors.TextPrimary
+)
             }
         }
 
@@ -180,10 +180,7 @@ fun ProtocolInputPage(
         // ── 解析按钮 ──
         item {
             Button(
-                onClick = {
-                    viewModel.parseProtocol()
-                    onParse()
-                },
+                onClick = onParse,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),

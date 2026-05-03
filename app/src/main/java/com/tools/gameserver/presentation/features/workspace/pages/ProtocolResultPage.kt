@@ -5,16 +5,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -80,7 +82,7 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = AppColors.SystemBlue)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("协议结果", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                    Text("协议结果", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
                 }
             }
             item {
@@ -108,8 +110,9 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                             Column(modifier = Modifier.padding(top = 8.dp)) {
                                 parsed.headers.forEach { (key, value) ->
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text(key, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.SystemBlue, modifier = Modifier.width(100.dp))
-                                        Text(value, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(key, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.SystemBlue, modifier = Modifier.widthIn(max = 140.dp).weight(0.35f, fill = false))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(value, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                                     }
                                 }
                             }
@@ -126,7 +129,8 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                             Spacer(modifier = Modifier.height(8.dp))
                             editableParams.forEach { (key, value) ->
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(key, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.SystemBlue, modifier = Modifier.width(80.dp))
+                                    Text(key, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.SystemBlue, modifier = Modifier.widthIn(max = 120.dp).weight(0.3f, fill = false))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     BasicTextField(
                                         value = value,
                                         onValueChange = { viewModel.updateEditableParam(key, it) },
@@ -208,9 +212,10 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("间隔:", fontSize = 12.sp, color = AppColors.TextSecondary)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                listOf(50L, 100L, 200L, 500L, 1000L).forEach { ms ->
-                                    FilterChip(selected = batchDelayMs == ms, onClick = { viewModel.updateBatchDelay(ms) }, label = { Text("${ms}ms", fontSize = 11.sp) }, modifier = Modifier.padding(end = 4.dp))
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    listOf(50L, 100L, 200L, 500L, 1000L).forEach { ms ->
+                                        FilterChip(selected = batchDelayMs == ms, onClick = { viewModel.updateBatchDelay(ms) }, label = { Text("${ms}ms", fontSize = 11.sp) })
+                                    }
                                 }
                             }
                             if (isBatchSending) {
@@ -221,27 +226,33 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                         }
                     }
                 }
-            }
-            if (batchResults.isNotEmpty()) {
+if (batchResults.isNotEmpty()) {
                 item {
                     GlassCard {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            batchResults.forEachIndexed { index, result ->
-                                Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(if (result.success) AppColors.SuccessLight else AppColors.ErrorLight).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(result.itemCode, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextPrimary, modifier = Modifier.width(80.dp))
-                                    Text(result.itemName, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                                    Text(if (result.success) "成功" else result.message, fontSize = 11.sp, color = if (result.success) AppColors.SystemGreen else AppColors.Error)
+                            Text("发送结果 (${batchResults.size})", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Column(
+                                modifier = Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState())
+                            ) {
+                                batchResults.forEachIndexed { index, result ->
+                                    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(if (result.success) AppColors.SuccessLight else AppColors.ErrorLight).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(result.itemCode, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextPrimary, modifier = Modifier.width(80.dp))
+                                        Text(result.itemName, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                        Text(if (result.success) "成功" else result.message, fontSize = 11.sp, color = if (result.success) AppColors.SystemGreen else AppColors.Error)
+                                    }
+                                    if (index < batchResults.size - 1) Spacer(modifier = Modifier.height(4.dp))
                                 }
-                                if (index < batchResults.size - 1) Spacer(modifier = Modifier.height(4.dp))
                             }
                         }
                     }
                 }
             }
+            }
         }
         Row(modifier = Modifier.fillMaxWidth().background(AppColors.BackgroundCard).padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { viewModel.sendRequest() }, modifier = Modifier.weight(1f), enabled = sendStatus !is SendStatus.Loading && !isBatchSending, colors = ButtonDefaults.buttonColors(containerColor = AppColors.SystemBlue)) {
-                Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("发送", fontSize = 13.sp)
             }

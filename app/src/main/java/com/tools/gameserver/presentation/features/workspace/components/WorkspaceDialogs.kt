@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -179,12 +180,18 @@ fun WorkspaceDialogs(
                 onDismissRequest = { viewModel.dismissDialog() },
                 title = { Text("使用说明", fontWeight = FontWeight.SemiBold) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("1. 将协议文件和物品文件放在同一目录下", fontSize = 13.sp)
-                        Text("2. 点击协议文件查看和编辑请求", fontSize = 13.sp)
-                        Text("3. 点击物品文件选择协议后进行批量发送", fontSize = 13.sp)
-                        Text("4. 支持 URL_ENCODED、JSON、RAW 三种请求体格式", fontSize = 13.sp)
-                        Text("5. 长按游戏卡片或文件可以删除", fontSize = 13.sp)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("📁 目录结构", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.SystemBlue)
+                        Text("将协议文件(.protocol)和物品文件(.txt)放在同一游戏目录下，应用会自动识别。", fontSize = 13.sp, lineHeight = 18.sp)
+                        HorizontalDivider(color = AppColors.SeparatorLight, modifier = Modifier.padding(vertical = 2.dp))
+                        Text("📝 协议文件", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.SystemBlue)
+                        Text("• 点击协议文件可查看和编辑 HTTP 请求\n• 支持 GET/POST 等方法\n• 请求头和请求体用 ---BODY--- 分隔\n• 支持 URL_ENCODED、JSON、RAW 格式", fontSize = 13.sp, lineHeight = 18.sp)
+                        HorizontalDivider(color = AppColors.SeparatorLight, modifier = Modifier.padding(vertical = 2.dp))
+                        Text("📦 物品文件", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.SystemBlue)
+                        Text("• 点击物品文件后选择一个协议进行批量发送\n• 支持搜索和全选/部分选择\n• 物品代码将自动替换协议中的指定参数", fontSize = 13.sp, lineHeight = 18.sp)
+                        HorizontalDivider(color = AppColors.SeparatorLight, modifier = Modifier.padding(vertical = 2.dp))
+                        Text("💡 快捷操作", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.SystemBlue)
+                        Text("• 长按游戏卡片：弹出管理菜单\n• 长按文件卡片：可删除文件\n• 右下角按钮：刷新列表\n• 下拉刷新：同步最新文件", fontSize = 13.sp, lineHeight = 18.sp)
                     }
                 },
                 confirmButton = {
@@ -201,43 +208,63 @@ fun WorkspaceDialogs(
                 text = {
                     Column {
                         // 添加物品文件
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Add, null, tint = AppColors.SystemBlue, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(12.dp))
-                            TextButton(onClick = {
+                        Surface(
+                            onClick = {
                                 viewModel.dismissDialog()
-                                // 触发文件选择
                                 viewModel.showDialog(WorkspaceDialog.AddItemFile(entry))
-                            }) { Text("添加物品文件", color = AppColors.TextPrimary) }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Transparent,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Add, null, tint = AppColors.SystemBlue, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text("添加物品文件", color = AppColors.TextPrimary, fontSize = 15.sp)
+                            }
                         }
                         // 上传协议
                         if (entry.protocolFiles.isNotEmpty()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Upload, null, tint = AppColors.SystemGreen, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(12.dp))
-                                TextButton(onClick = {
+                            Surface(
+                                onClick = {
                                     viewModel.dismissDialog()
                                     viewModel.openUploadDialog(entry)
-                                }) { Text("上传协议到社区", color = AppColors.TextPrimary) }
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color.Transparent,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Upload, null, tint = AppColors.SystemGreen, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(12.dp))
+                                    Text("上传协议到社区", color = AppColors.TextPrimary, fontSize = 15.sp)
+                                }
                             }
                         }
                         // 删除游戏目录
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Delete, null, tint = AppColors.Error, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(12.dp))
-                            TextButton(onClick = {
+                        Surface(
+                            onClick = {
                                 viewModel.dismissDialog()
                                 viewModel.showDialog(WorkspaceDialog.DeleteGame(entry))
-                            }) { Text("删除游戏目录", color = AppColors.Error) }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Transparent,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Delete, null, tint = AppColors.Error, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text("删除游戏目录", color = AppColors.Error, fontSize = 15.sp)
+                            }
                         }
                     }
                 },

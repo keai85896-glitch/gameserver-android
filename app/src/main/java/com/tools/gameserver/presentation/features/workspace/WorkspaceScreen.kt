@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -89,6 +90,12 @@ fun WorkspaceScreen(
             viewModel.copyFilesToGameDir(uris, dir, context)
         }
         pendingAddItemDir.value = null
+    }
+
+    // 触发带 MIME 过滤的文件选择
+    fun launchFilePicker(dir: File) {
+        pendingAddItemDir.value = dir
+        filePickerLauncher.launch(arrayOf("text/*", "application/octet-stream"))
     }
 
     // ItemFile 页状态
@@ -245,10 +252,10 @@ fun WorkspaceScreen(
                         }
                         PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter), contentColor = AppColors.SystemBlue)
                         FloatingActionButton(
-                            onClick = { viewModel.showDialog(WorkspaceDialog.CreateProtocol) },
+                            onClick = { viewModel.onRefreshTriggered() },
                             containerColor = AppColors.SystemBlue,
                             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).size(56.dp)
-                        ) { Icon(Icons.Default.Add, "新建", tint = AppColors.White) }
+                        ) { Icon(Icons.Default.Refresh, "刷新", tint = AppColors.White) }
                     }
                 }
                 is WorkspacePage.GameDetail -> GameDetailPage(
@@ -288,13 +295,12 @@ fun WorkspaceScreen(
         }
 
         WorkspaceDialogs(
-            currentDialog = currentDialog,
-            viewModel = viewModel,
-            onAddItemFileConfirm = { entry ->
-                pendingAddItemDir.value = entry.dir
-                filePickerLauncher.launch(arrayOf("*/*"))
-            }
-        )
+        currentDialog = currentDialog,
+        viewModel = viewModel,
+        onAddItemFileConfirm = { entry ->
+            launchFilePicker(entry.dir)
+        }
+    )
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
