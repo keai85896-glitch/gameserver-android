@@ -131,6 +131,7 @@ fun GameDetailPage(
             title = { Text("选择协议文件", fontWeight = FontWeight.SemiBold) },
             text = {
                 Column {
+                    // 协议文件列表
                     entry.protocolFiles.forEach { protoFile ->
                         Row(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
@@ -144,6 +145,28 @@ fun GameDetailPage(
                             Icon(Icons.Default.Description, null, tint = AppColors.SystemBlue, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(protoFile.nameWithoutExtension, color = AppColors.TextPrimary, fontSize = 15.sp)
+                        }
+                    }
+                    // 分隔线
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = AppColors.Divider
+                    )
+                    // 编辑物品文件按钮
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                showProtocolPicker = false
+                                onItemFileClick(pendingItemFile!!, pendingItemPairs, entry)
+                            }
+                            .padding(vertical = 10.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Edit, null, tint = AppColors.SystemOrange, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text("编辑物品文件", color = AppColors.TextPrimary, fontSize = 15.sp)
+                            Text("查看、筛选并保存为新文件", color = AppColors.TextHint, fontSize = 12.sp)
                         }
                     }
                 }

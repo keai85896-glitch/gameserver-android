@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -284,10 +286,7 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     listOf(50L, 100L, 200L, 500L, 1000L).forEach { ms ->
                                         FilterChip(selected = batchDelayMs == ms, onClick = { viewModel.updateBatchDelay(ms) }, label = { Text("${ms}ms", fontSize = 11.sp) })
-                                    }
-                                }
-                            }
-                            // ── 物品列表（带搜索 + 分页） ──
+                            // ── 物品列表（带搜索 + 分页 + iOS 风格） ──
                             Spacer(modifier = Modifier.height(8.dp))
                             var itemSearchQuery by remember { mutableStateOf("") }
                             var itemPage by remember { mutableIntStateOf(0) }
@@ -295,44 +294,23 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                             // 搜索过滤
                             val filteredItems = remember(itemsList, itemSearchQuery) {
                                 if (itemSearchQuery.isBlank()) itemsList.withIndex().toList()
-                                else itemsList.withIndex().filter { (i, pair) ->
+                                else itemsList.withIndex().filter { (_, pair) ->
                                     pair.first.contains(itemSearchQuery, ignoreCase = true) ||
                                     pair.second.contains(itemSearchQuery, ignoreCase = true)
                                 }
                             }
                             val totalFilteredPages = maxOf(1, (filteredItems.size + pageSize - 1) / pageSize)
-                            // 确保当前页不越界
                             val safePage = itemPage.coerceIn(0, totalFilteredPages - 1)
                             if (safePage != itemPage) itemPage = safePage
                             val pageItems = filteredItems.drop(safePage * pageSize).take(pageSize)
 
-                            // 标题栏 + 全选
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Text("物品列表", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                                Spacer(modifier = Modifier.weight(1f))
-                                val allFilteredSelected = filteredItems.isNotEmpty() && filteredItems.all { (idx, _) -> idx in selectedIndices }
-                                TextButton(
-                                    onClick = {
-                                        if (allFilteredSelected) {
-                                            // 取消当前过滤结果的选中
-                                            val filteredIdxSet = filteredItems.map { it.index }.toSet()
-                                            viewModel.clearSelection(filteredIdxSet)
-                                        } else {
-                                            viewModel.selectAllFiltered(filteredItems.map { it.index })
-                                        }
-                                    },
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                                ) {
-                                    Text(if (allFilteredSelected) "取消全选" else "全选", fontSize = 12.sp, color = AppColors.SystemBlue)
-                                }
-                            }
                             // 搜索框
                             OutlinedTextField(
                                 value = itemSearchQuery,
                                 onValueChange = { itemSearchQuery = it; itemPage = 0 },
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("搜索物品代码或名称...", fontSize = 12.sp, color = AppColors.TextHint) },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AppColors.TextHint, modifier = Modifier.size(18.dp)) },
+                                placeholder = { Text("搜索物品代码或名称...", fontSize = 13.sp, color = AppColors.TextHint) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AppColors.TextHint, modifier = Modifier.size(20.dp)) },
                                 trailingIcon = {
                                     if (itemSearchQuery.isNotEmpty()) {
                                         IconButton(onClick = { itemSearchQuery = ""; itemPage = 0 }, modifier = Modifier.size(18.dp)) {
@@ -341,54 +319,86 @@ fun ProtocolResultPage(viewModel: WorkspaceViewModel) {
                                     }
                                 },
                                 singleLine = true,
-                                shape = RoundedCornerShape(8.dp),
-                                textStyle = TextStyle(fontSize = 13.sp),
+                                shape = RoundedCornerShape(10.dp),
+                                textStyle = TextStyle(fontSize = 14.sp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = AppColors.SystemBlue,
                                     unfocusedBorderColor = AppColors.SeparatorLight,
                                     cursorColor = AppColors.SystemBlue
                                 )
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("已选 ${selectedIndices.size} / ${itemsList.size}" + if (itemSearchQuery.isNotBlank()) "  (筛选 ${filteredItems.size} 个)" else "", fontSize = 11.sp, color = AppColors.TextHint)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            // 物品列表（分页）
+                            Spacer(modifier = Modifier.height(6.dp))
+                            // 状态栏：全选 + 已选/总数
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                val allFilteredSelected = filteredItems.isNotEmpty() && filteredItems.all { (idx, _) -> idx in selectedIndices }
+                                Icon(
+                                    if (allFilteredSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                    contentDescription = null,
+                                    tint = if (allFilteredSelected) AppColors.SystemBlue else AppColors.TextHint,
+                                    modifier = Modifier.size(20.dp).clickable {
+                                        if (allFilteredSelected) {
+                                            viewModel.clearSelection(filteredItems.map { it.index }.toSet())
+                                        } else {
+                                            viewModel.selectAllFiltered(filteredItems.map { it.index })
+                                        }
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("全选", fontSize = 12.sp, color = AppColors.TextSecondary)
+                                Spacer(modifier = Modifier.weight(1f))
+                                Text("已选 ${selectedIndices.size} / ${itemsList.size}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                                if (itemSearchQuery.isNotBlank()) {
+                                    Text("  筛选 ${filteredItems.size} 个", fontSize = 11.sp, color = AppColors.TextHint)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            // 物品列表（分页 + iOS 风格）
                             if (filteredItems.isEmpty()) {
-                                Text("无匹配物品", fontSize = 12.sp, color = AppColors.TextHint, modifier = Modifier.padding(vertical = 8.dp))
+                                Text("无匹配物品", fontSize = 13.sp, color = AppColors.TextHint, modifier = Modifier.padding(vertical = 12.dp))
                             } else {
-                                pageItems.forEach { (index, pair) ->
+                                pageItems.forEachIndexed { pageIdx, (index, pair) ->
                                     val (code, name) = pair
                                     val isSelected = index in selectedIndices
                                     Row(
                                         modifier = Modifier.fillMaxWidth()
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(if (isSelected) AppColors.SystemBlue.copy(alpha = 0.08f) else Color.Transparent)
+                                            .background(if (isSelected) AppColors.SystemBlue.copy(alpha = 0.06f) else Color.Transparent)
                                             .clickable { viewModel.toggleItem(index) }
-                                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                                            .padding(vertical = 8.dp, horizontal = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = { viewModel.toggleItem(index) },
-                                            modifier = Modifier.size(28.dp),
-                                            colors = CheckboxDefaults.colors(checkedColor = AppColors.SystemBlue)
+                                        Icon(
+                                            if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                            contentDescription = null,
+                                            tint = if (isSelected) AppColors.SystemBlue else AppColors.TextHint,
+                                            modifier = Modifier.size(22.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(code, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = AppColors.TextPrimary, modifier = Modifier.widthIn(max = 100.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(name, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(name, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text("code: $code", fontSize = 11.sp, color = AppColors.TextHint, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        // 全局序号
+                                        Text("#${index + 1}", fontSize = 11.sp, color = AppColors.TextDisabled, modifier = Modifier.padding(start = 4.dp))
+                                    }
+                                    if (pageIdx < pageItems.size - 1) {
+                                        HorizontalDivider(color = AppColors.SeparatorLight, modifier = Modifier.padding(start = 36.dp))
                                     }
                                 }
                             }
                             // 分页控件
                             if (totalFilteredPages > 1) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                HorizontalDivider(color = AppColors.SeparatorLight)
                                 Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(onClick = { itemPage-- }, enabled = safePage > 0, modifier = Modifier.size(32.dp)) {
                                         Icon(Icons.Default.ChevronLeft, contentDescription = "上一页", tint = if (safePage > 0) AppColors.SystemBlue else AppColors.TextDisabled)
                                     }
-                                    Text("${safePage + 1} / $totalFilteredPages", fontSize = 12.sp, color = AppColors.TextSecondary, modifier = Modifier.padding(horizontal = 8.dp))
+                                    Text("${safePage + 1} / $totalFilteredPages", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = AppColors.TextSecondary, modifier = Modifier.padding(horizontal = 12.dp))
                                     IconButton(onClick = { itemPage++ }, enabled = safePage < totalFilteredPages - 1, modifier = Modifier.size(32.dp)) {
                                         Icon(Icons.Default.ChevronRight, contentDescription = "下一页", tint = if (safePage < totalFilteredPages - 1) AppColors.SystemBlue else AppColors.TextDisabled)
+                                    }
+                                }
+                            }
                                     }
                                 }
                             }
